@@ -4,131 +4,274 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Bot Interface</title>
-    <!-- 引入 Telegram WebApp JS SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-button-color: #0088cc;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f0f0f0;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            transition: all 0.3s ease;
         }
+        
         .container {
             text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: var(--tg-theme-secondary-bg-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+        
         .btn {
-            background-color: var(--tg-theme-button-color, #0088cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            padding: 10px 20px;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            width: 100%;
+            max-width: 300px;
+            margin: 10px auto;
+            display: block;
         }
+        
         .btn:hover {
             opacity: 0.9;
+            transform: translateY(-2px);
         }
+        
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
         #status {
             margin-top: 20px;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
         }
+        
         .success {
-            background-color: #dff0d8;
-            color: #3c763d;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
         }
+        
         .error {
-            background-color: #f2dede;
-            color: #a94442;
+            background-color: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+        
+        .loading {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .user-info {
+            text-align: left;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+        }
+        
+        .info-row {
+            margin: 10px 0;
+            display: flex;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            min-width: 100px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Telegram Bot Interface</h1>
-        <button id="sendInfoBtn" class="btn">点击：发送用户信息</button>
+        <h1>Telegram 用户信息</h1>
+        
+        <div class="user-info" id="userInfoContainer">
+            <div class="info-row">
+                <span class="info-label">用户ID:</span>
+                <span id="userId"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">用户名:</span>
+                <span id="username"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">姓名:</span>
+                <span id="fullName"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">语言:</span>
+                <span id="language"></span>
+            </div>
+        </div>
+        
+        <button id="sendInfoBtn" class="btn">发送用户信息</button>
         <div id="status"></div>
     </div>
 
     <script>
-        // 确保 Telegram WebApp 已准备就绪
-        window.Telegram.WebApp.ready();
-
-        // 获取 Telegram WebApp 实例
+        // 初始化 Telegram WebApp
         const tg = window.Telegram.WebApp;
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置主题变量
+            applyTheme();
+            
+            // 初始化界面
+            initInterface();
+            
+            // 设置返回按钮
+            setupBackButton();
+            
+            // 展开 WebApp
+            tg.expand();
+        });
 
-        // 设置主题
-        document.documentElement.style.setProperty('--tg-theme-bg-color', tg.backgroundColor);
-        document.documentElement.style.setProperty('--tg-theme-text-color', tg.textColor);
-        document.documentElement.style.setProperty('--tg-theme-button-color', tg.buttonColor);
-        document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.buttonTextColor);
+        // 应用 Telegram 主题
+        function applyTheme() {
+            const style = document.documentElement.style;
+            style.setProperty('--tg-theme-bg-color', tg.backgroundColor || '#ffffff');
+            style.setProperty('--tg-theme-text-color', tg.textColor || '#000000');
+            style.setProperty('--tg-theme-button-color', tg.buttonColor || '#0088cc');
+            style.setProperty('--tg-theme-button-text-color', tg.buttonTextColor || '#ffffff');
+            style.setProperty('--tg-theme-secondary-bg-color', tg.secondaryBgColor || '#f0f0f0');
+        }
 
-        document.getElementById('sendInfoBtn').addEventListener('click', async function() {
+        // 初始化界面
+        function initInterface() {
+            const user = tg.initDataUnsafe?.user;
             const statusDiv = document.getElementById('status');
-
-            try {
-                // 检查是否在 Telegram WebApp 环境中
-                if (!tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-                    throw new Error('无法获取 Telegram 用户信息');
+            const sendBtn = document.getElementById('sendInfoBtn');
+            
+            // 显示用户信息
+            if (user) {
+                document.getElementById('userId').textContent = user.id || '未提供';
+                document.getElementById('username').textContent = user.username ? `@${user.username}` : '未设置';
+                document.getElementById('fullName').textContent = 
+                    [user.first_name, user.last_name].filter(Boolean).join(' ') || '未提供';
+                document.getElementById('language').textContent = user.language_code || '未检测到';
+            } else {
+                document.getElementById('userInfoContainer').innerHTML = 
+                    '<p style="color: var(--tg-theme-hint-color);">无法获取用户信息</p>';
+                sendBtn.disabled = true;
+            }
+            
+            // 设置发送按钮事件
+            sendBtn.addEventListener('click', async function() {
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'loading';
+                statusDiv.textContent = '正在发送数据...';
+                sendBtn.disabled = true;
+                
+                try {
+                    await sendUserData();
+                } catch (error) {
+                    console.error('发送失败:', error);
+                    statusDiv.className = 'error';
+                    statusDiv.textContent = `发送失败: ${error.message}`;
+                    tg.showPopup({
+                        title: '错误',
+                        message: error.message,
+                        buttons: [{ text: '确定', type: 'default' }]
+                    });
+                } finally {
+                    sendBtn.disabled = false;
                 }
+            });
+        }
 
-                const user = tg.initDataUnsafe.user;
-
-                const response = await fetch('http://43.198.72.195:8001/info', {
+        // 发送用户数据
+        async function sendUserData() {
+            const statusDiv = document.getElementById('status');
+            const user = tg.initDataUnsafe?.user;
+            
+            if (!user || !user.id) {
+                throw new Error('无效的用户数据');
+            }
+            
+            if (!tg.initData) {
+                throw new Error('缺少 Telegram 验证数据');
+            }
+            
+            const payload = {
+                userId: user.id,
+                username: user.username,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                languageCode: user.language_code,
+                authDate: tg.initDataUnsafe?.auth_date,
+                queryId: tg.initDataUnsafe?.query_id,
+                platform: tg.platform
+            };
+            
+            try {
+                const response = await fetch('https://tgapi.thlm.bond/info', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // 添加 Telegram 初始化数据作为验证
-                        'Telegram-Data': tg.initData
+                        'X-Telegram-Init-Data': tg.initData
                     },
-                    body: JSON.stringify({
-                        userId: user.id,
-                        username: user.username,
-                        firstName: user.first_name,
-                        lastName: user.last_name,
-                        languageCode: user.language_code
-                    })
+                    body: JSON.stringify(payload)
                 });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    statusDiv.className = 'success';
-                    statusDiv.textContent = '信息发送成功！';
-
-                    // 显示 Telegram 弹窗提示
-                    tg.showPopup({
-                        title: '成功',
-                        message: '用户信息已成功发送',
-                        buttons: [{text: '确定'}]
-                    });
-                } else {
-                    throw new Error(data.message || '请求失败');
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `请求失败: ${response.status}`);
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                statusDiv.className = 'error';
-                statusDiv.textContent = '发送失败：' + error.message;
-
-                // 显示错误提示
+                
+                const data = await response.json();
+                statusDiv.className = 'success';
+                statusDiv.textContent = '信息发送成功！';
+                
                 tg.showPopup({
-                    title: '错误',
-                    message: error.message,
-                    buttons: [{text: '确定'}]
+                    title: '成功',
+                    message: '用户信息已成功发送',
+                    buttons: [{ text: '确定', type: 'default' }]
                 });
+                
+                // 3秒后自动关闭状态提示
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+                
+                return data;
+            } catch (error) {
+                throw new Error(`网络请求失败: ${error.message}`);
             }
-        });
+        }
 
-        // 设置 Telegram WebApp 返回按钮
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => {
-            tg.close();
-        });
-
-        // 展开 WebApp 到全屏
-        tg.expand();
+        // 设置返回按钮
+        function setupBackButton() {
+            if (tg.BackButton.isVisible) return;
+            
+            tg.BackButton.show();
+            tg.BackButton.onClick(() => {
+                tg.close();
+            });
+        }
     </script>
 </body>
 </html>
